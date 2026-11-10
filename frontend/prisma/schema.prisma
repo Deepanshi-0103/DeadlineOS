@@ -1,0 +1,220 @@
+// Prisma schema for DeadlineOS
+// PostgreSQL via Neon — connection URLs live in prisma.config.ts / .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  avatarUrl String?
+  role      String   @default("USER")
+  // Planning prefs (adaptive scheduling learns from these + BehaviorEvent)
+  focusHoursStart Int @default(9)   // local hour 0-23
+  focusHoursEnd   Int @default(17)
+  preferMorning   Boolean @default(true)
+  // Gamification — points → ice creams → treat
+  rewardPoints    Int @default(0)
+  iceCreams       Int @default(0)
+  treatsClaimed   Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  opportunities Opportunity[]
+  captureJobs   CaptureJob[]
+  goals         Goal[]
+  tasks         Task[]
+  alertRules    AlertRule[]
+  dayPlans      DayPlan[]
+  behaviorEvents BehaviorEvent[]
+  rewardEvents   RewardEvent[]
+  googleCalendar GoogleCalendarConnection?
+}
+
+/** Points / ice cream / treat ledger */
+model RewardEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // task_points | buy_icecream | claim_treat
+  pointsDelta Int    @default(0)
+  payload   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Opportunity {
+  id               String   @id @default(cuid())
+  title            String
+  organizer        String
+  category         String
+  reward           String
+  deadline         String?
+  daysLeft         Int
+  priority         String
+  status           String
+  sourceUrl        String?
+  summary          String?
+  eligibility      String?
+  registrationUrl  String?
+  confidence       Float?
+  needsReview      Boolean  @default(false)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  captureJobs CaptureJob[]
+  tasks       Task[]
+}
+
+model CaptureJob {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceType    String   // url | pdf | text | image
+  sourceUrl     String?
+  rawText       String?  @db.Text
+  fileName      String?
+  status        String   // pending | processing | done | failed
+  error         String?
+  opportunityId String?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+/** Long-term goals — connect to tasks & calendar */
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String   @default("General") // Study | Career | Health | Contest | Custom
+  color       String   @default("lilac")   // lilac | peach | mint | sky | rose
+  targetDate  String?  // YYYY-MM-DD
+  progress    Int      @default(0)         // 0-100
+  status      String   @default("active")  // active | paused | done
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks Task[]
+
+  @@index([userId, status])
+}
+
+/** Tasks + deadlines — can link to a goal and/or opportunity */
+model Task {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalId         String?
+  goal           Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  opportunityId  String?
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  title          String
+  notes          String?
+  linkUrl        String?   // optional external / resource link
+  category       String    @default("General") // Study | Assignments | Coding | Contest | Mock | Custom
+  status         String    @default("todo")    // todo | doing | done | skipped
+  priority       String    @default("medium")  // high | medium | low
+  dueAt          DateTime?
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  durationMin    Int       @default(60)
+  completedAt    DateTime?
+  googleEventId  String?   // Google Calendar event id (DeadlineOS → Google sync)
+  googleSyncedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  planBlocks PlanBlock[]
+
+  @@index([userId, status])
+  @@index([userId, dueAt])
+  @@index([userId, scheduledStart])
+}
+
+/** OAuth connection for one-way DeadlineOS → Google Calendar sync */
+model GoogleCalendarConnection {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken         String    @db.Text
+  accessToken          String?   @db.Text
+  accessTokenExpiresAt DateTime?
+  calendarId           String    @default("primary")
+  connectedEmail       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+/** Customizable alerts — contest / mock / deadline / custom */
+model AlertRule {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String   // deadline | contest | mock | custom
+  label          String
+  enabled        Boolean  @default(true)
+  daysBefore     Int      @default(1)
+  categoryFilter String?  // optional category match
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, enabled])
+}
+
+/** Daily plan container (Plan My Day) */
+model DayPlan {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       String   // YYYY-MM-DD
+  suggestion String?  @db.Text
+  accepted   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  blocks PlanBlock[]
+
+  @@unique([userId, date])
+}
+
+model PlanBlock {
+  id        String   @id @default(cuid())
+  dayPlanId String
+  dayPlan   DayPlan  @relation(fields: [dayPlanId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  title     String
+  startTime String   // HH:mm
+  endTime   String
+  category  String   @default("General")
+  status    String   @default("planned") // planned | done | skipped | moved
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/** Behavior log for adaptive rescheduling */
+model BehaviorEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // completed_early | completed_late | dismissed_suggestion | rescheduled | skipped_block
+  payload   String?  @db.Text // JSON string
+  createdAt DateTime @default(now())
+
+  @@index([userId, type])
+}

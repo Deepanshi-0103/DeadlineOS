@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeadlineOS Capture</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ─── HEADER ─────────────────────────────────────────────── -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">D</div>
+        <span>Deadline<strong>OS</strong></span>
+      </div>
+      <button id="btn-logout" class="btn-icon" title="Sign out" style="display:none">
+        ✕
+      </button>
+    </header>
+
+    <!-- ─── LOGIN VIEW ─────────────────────────────────────────── -->
+    <div id="view-login">
+      <p class="sub">Sign in to save opportunities</p>
+      <div class="form-group">
+        <label for="input-email">Email</label>
+        <input id="input-email" type="email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="input-password">Password</label>
+        <input id="input-password" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div id="login-error" class="error-msg" style="display:none"></div>
+      <button id="btn-login" class="btn btn-primary">Sign in</button>
+      <p class="hint">Don't have an account? <a href="http://localhost:3001/signup" target="_blank">Sign up</a></p>
+    </div>
+
+    <!-- ─── CAPTURE VIEW ───────────────────────────────────────── -->
+    <div id="view-capture" style="display:none">
+      <div id="user-info" class="user-info"></div>
+
+      <!-- Today's plan (compact) -->
+      <section id="today-plan" class="today-plan" aria-label="Today's plan">
+        <div class="today-plan-head">
+          <span class="today-plan-title">Today’s plan</span>
+          <div class="today-plan-actions">
+            <button type="button" id="btn-refresh-plan" class="btn-text" title="Refresh">↻</button>
+            <a id="link-open-plan" class="btn-text" href="#" target="_blank" rel="noopener">Open</a>
+          </div>
+        </div>
+        <div id="today-plan-list" class="today-plan-list">
+          <p class="today-plan-empty">Loading…</p>
+        </div>
+      </section>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="page">Current Page</button>
+        <button class="tab-btn" data-tab="url">Paste URL</button>
+      </div>
+
+      <!-- Tab: Current Page (JS-rendered content) -->
+      <div id="tab-page" class="tab-content">
+        <div id="page-preview" class="page-preview">
+          <div class="page-favicon" id="page-favicon"></div>
+          <div class="page-meta">
+            <div id="page-title" class="page-title">Loading…</div>
+            <div id="page-url" class="page-url"></div>
+          </div>
+        </div>
+        <p class="hint capture-note">
+          Extracts <strong>rendered</strong> page content (works on JS-heavy sites).
+        </p>
+        <button id="btn-capture-page" class="btn btn-primary">Save this page</button>
+      </div>
+
+      <!-- Tab: Paste URL -->
+      <div id="tab-url" class="tab-content" style="display:none">
+        <div class="form-group">
+          <label for="input-url">Opportunity URL</label>
+          <input id="input-url" type="url" placeholder="https://example.com/opportunity" />
+        </div>
+        <p class="hint">The server will fetch and parse the page (static HTML only).</p>
+        <button id="btn-capture-url" class="btn btn-primary">Save URL</button>
+      </div>
+
+      <!-- Status bar -->
+      <div id="capture-status" class="capture-status" style="display:none"></div>
+    </div>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
