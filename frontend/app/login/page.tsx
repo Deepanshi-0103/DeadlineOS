@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, Mail, AlertCircle } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -81,9 +82,21 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1.5">
-            Password
-          </label>
+          <div className="flex items-center justify-between gap-3 mb-1.5">
+            <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider">
+              Password
+            </label>
+            <Link
+              href={
+                email.trim()
+                  ? `/forgot-password?email=${encodeURIComponent(email.trim())}`
+                  : "/forgot-password"
+              }
+              className="text-xs font-semibold text-brand hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div className="relative group">
             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted group-focus-within:text-brand transition-colors" />
             <input

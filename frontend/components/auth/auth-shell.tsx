@@ -7,7 +7,7 @@ import { BrandLogo } from "@/components/brand/brand-logo";
 
 interface AuthShellProps {
   children: React.ReactNode;
-  mode: "login" | "signup";
+  mode: "login" | "signup" | "forgot" | "reset";
 }
 
 export function AuthShell({ children, mode }: AuthShellProps) {
@@ -53,18 +53,27 @@ export function AuthShell({ children, mode }: AuthShellProps) {
             </div>
 
             <p className="mt-5 text-center text-xs text-ink-faint">
-              {mode === "login" ? (
+              {mode === "login" && (
                 <>
                   Don&apos;t have an account?{" "}
                   <Link href="/signup" className="text-brand font-semibold hover:underline">
                     Create one free
                   </Link>
                 </>
-              ) : (
+              )}
+              {mode === "signup" && (
                 <>
                   Already have an account?{" "}
                   <Link href="/login" className="text-brand font-semibold hover:underline">
                     Sign in
+                  </Link>
+                </>
+              )}
+              {(mode === "forgot" || mode === "reset") && (
+                <>
+                  Remembered it?{" "}
+                  <Link href="/login" className="text-brand font-semibold hover:underline">
+                    Back to sign in
                   </Link>
                 </>
               )}
